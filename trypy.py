@@ -6,6 +6,8 @@ import datetime
 import os
 import time
 
+import math
+
 DEFAULTPORT = 8080
 DEFAULTRING = 91
 
@@ -75,6 +77,14 @@ class ValueCheck:
         self.value = value
 
     def check(self, space, s):
+        safemods = ("math",)
+        if "." in s:
+            potmod = s[:s.index(".")]
+            if potmod.isalpha():
+                if potmod in safemods:
+                    import importlib
+                    mod = importlib.import_module(potmod)
+                    space[potmod] = mod
         try:
             ret = eval(s, space)
         except:
@@ -125,10 +135,14 @@ class AstCheck:
             return False
         if f == self.result:
             ops = 0
+            dops = 0
             for op in ("+", "-", "*", "/", "//", "%", "**"):
                 num = s.count(op)
                 if num:
                     ops += 1
+                    if op in ("//", "**"):
+                        dops += 1
+            ops -= dops
             if ops == self.ops:
                 return True
         return False
@@ -249,11 +263,12 @@ def application():
     g10 = Goal("Create a variable with empty dictionary value.", True, VariableCheck(value={}), metavar="dic")
     g11 = Goal("Update the dictionary '{__dic}' to contain key 'k' with value 'v'.", True, VariableCheck(name="space['__dic']", value={"k": "v"}), resolve=True)
     g12 = Goal("Generate the list, with actual list datatype: [1, 3, 5, ... 99]", False, ValueCheck(list(range(1, 100, 2))))
-    g13 = Goal("Type an expression yielding the result 13 by combining exactly 3 distinct operators.", False, AstCheck(3, 13))
+    g13 = Goal("Type an expression yielding the result 13 by combining exactly 3 distinct arithmetic operators.", False, AstCheck(3, 13))
+    g14 = Goal("Calculate the cosine value of 5 (hint: necessary modules can be assumed to be already imported).", False, ValueCheck(math.cos(5)))
 
     tstart = time.time()
 
-    ret = process([g1, g2, g3, g4, g5, g6, g7, g8, g9, g10, g11, g12])
+    ret = process([g1, g2, g3, g4, g5, g6, g7, g8, g9, g10, g11, g12, g13, g14])
 
     if ret:
         print()
